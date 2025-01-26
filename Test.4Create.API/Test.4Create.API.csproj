@@ -9,8 +9,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Resources\ClinicalTrialMetadata.schema.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
+    <PackageReference Include="NJsonSchema" Version="11.1.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Test.4Create.Data\Test.4Create.Data.csproj" />
+    <ProjectReference Include="..\Test.4Create.Domain\Test.4Create.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\ClinicalTrialMetadata.schema.json" />
   </ItemGroup>
 
 </Project>
