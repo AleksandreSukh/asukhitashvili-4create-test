@@ -1,4 +1,6 @@
-﻿using Test._4Create.Data;
+﻿using Microsoft.Extensions.Logging;
+using Test._4Create.Data;
+using Test._4Create.Domain.Infrastructure;
 using Test._4Create.Domain.Models;
 
 namespace Test._4Create.Domain.Services
@@ -6,13 +8,14 @@ namespace Test._4Create.Domain.Services
     public class TrialProcessingService
     {
         private readonly UnitOfWork _unitOfWork;
-
-        public TrialProcessingService(UnitOfWork unitOfWork)
+        private readonly ILogger<TrialProcessingService> _logger;
+        public TrialProcessingService(UnitOfWork unitOfWork, ILogger<TrialProcessingService> logger)
         {
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
-        public async Task SaveTrialMetadata(ClinicalTrialMetadata clinicalTrialMetadata)
+        public async Task<CommandExecutionResult> SaveTrialMetadata(ClinicalTrialMetadata clinicalTrialMetadata)
         {
             var endDateOrDefault = clinicalTrialMetadata.EndDate == null && clinicalTrialMetadata.Status == TrialStatus.Ongoing
                 ? clinicalTrialMetadata.StartDate.AddMonths(1)
@@ -34,7 +37,22 @@ namespace Test._4Create.Domain.Services
             };
 
             _unitOfWork.ClinicalTrialMetadataRepository.Insert(trialMetadata);
-            await _unitOfWork.SaveAsync();
+            try
+            {
+                await _unitOfWork.SaveAsync();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Error occured while trying to save {nameof(Data.Entities.ClinicalTrialMetadata)} in database. Error:{e}");
+                return CommandExecutionResult.WithError(ErrorCodes.TrialMetadataProcessing.TrialMetadataPersistenceError, e.Message);
+            }
+
+            return CommandExecutionResult.Ok();
+        }
+
+        public void GetTrialMetadataById(string id)
+        {
+            throw new NotImplementedException();
         }
     }
 }

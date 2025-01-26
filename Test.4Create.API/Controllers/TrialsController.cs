@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using Test._4Create.API.Validation;
@@ -26,13 +27,14 @@ namespace Test._4Create.API.Controllers
         /// <param name="id"></param>
         /// <returns></returns>
 
-        [HttpGet("{id:int}")]
-        public IEnumerable<TrialGetModel> Get([FromRoute] int id)
+        [HttpGet("{id:string}")]
+        public IEnumerable<TrialGetModel> Get([FromRoute] string id)
         {
             _logger.LogInformation("Get trial request initiated");
 
+            _trialProcessingService.GetTrialMetadataById(id);
+
             _logger.LogInformation("Get trial request served");
-            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -87,15 +89,20 @@ namespace Test._4Create.API.Controllers
                 return BadRequest(new { Message = "JSON parsing failed", Error = ex.Message });
             }
 
-            var dataValidationResult = new ClinicalTrialMetadataValidator()
-                .Validate(clinicalTrialMetadata!);
+            var dataValidationResult = new ClinicalTrialMetadataValidator().Validate(clinicalTrialMetadata!);
             if (!dataValidationResult.IsValid)
             {
                 var dataValidationErrors = dataValidationResult.Errors.Select(e => e.ErrorMessage);
                 return BadRequest(new { Message = "JSON data validatoin failed", Error = string.Join("; ", dataValidationErrors) });
             }
 
-            await _trialProcessingService.SaveTrialMetadata(clinicalTrialMetadata!);
+            var trialMetadataSavingResult = await _trialProcessingService.SaveTrialMetadata(clinicalTrialMetadata!);
+
+            if (!trialMetadataSavingResult.Success)
+            {
+                _logger.LogInformation("JSON upload failed due to persistence error:" + trialMetadataSavingResult.Errors.First().Message);
+                return new StatusCodeResult((int) HttpStatusCode.InternalServerError);
+            }
 
             _logger.LogInformation("JSON upload completed");
 
