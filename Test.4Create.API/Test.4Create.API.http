@@ -1,0 +1,6 @@
+@Test._4Create.API_HostAddress = http://localhost:5045
+
+GET {{Test._4Create.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
