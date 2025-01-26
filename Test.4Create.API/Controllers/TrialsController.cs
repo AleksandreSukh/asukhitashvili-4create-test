@@ -5,7 +5,7 @@ using Test._4Create.API.Validation;
 using Test._4Create.Domain.Models;
 using Test._4Create.Domain.Models.Validation;
 using Test._4Create.Domain.Services;
-using Test._4Create.API.Models;
+using Test._4Create.Domain.Infrastructure;
 
 namespace Test._4Create.API.Controllers;
 
@@ -23,36 +23,64 @@ public class TrialsController : ControllerBase
     }
 
     /// <summary>
-    /// Get Specific Record by ID: Implement an endpoint to retrieve a specific record using its unique identifier.
+    /// Returns specific records by id.
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
 
     [HttpGet("{id:string}")]
-    public IEnumerable<TrialGetModel> Get([FromRoute] string id)
+    public ActionResult<ClinicalTrialMetadata> Get([FromRoute] string id)
     {
         _logger.LogInformation("Get trial request initiated");
 
-        _trialProcessingService.GetTrialMetadataById(id);
+        var result = _trialProcessingService.GetTrialMetadataById(id);
 
+        if (!result.Success)
+        {
+            var error = result.Errors.First();
+            if (error.Code == ErrorCodes.TrialMetadataProcessing.TrialMetadataWasNotFound)
+            {
+                return NotFound();
+            }
+
+            _logger.LogError($"Get trial data failed with unexpected error:{error}");
+            return new StatusCodeResult((int)HttpStatusCode.InternalServerError);
+        }
         _logger.LogInformation("Get trial request served");
+
+        return Ok(result.Data);
     }
 
     /// <summary>
-    /// Filtering Support: Allow filtering of records based on query parameters (e.g., status)
+    /// Search records based on query parameters (e.g., status)
     /// </summary>
     /// <param name="status"></param>
     /// <returns></returns>
 
     [HttpGet("search")]
-    public IEnumerable<TrialGetModel> Search([FromQuery] string status)
+    public ActionResult<List<ClinicalTrialMetadata>> Search([FromQuery] string? status)
     {
         _logger.LogInformation("Search request initiated");
 
+        var result = _trialProcessingService.SearchTrialMetadatas(new ClinicalTrialMetadataSearchParams { Status = status });
+
+        if (!result.Success)
+        {
+            var error = result.Errors.First();
+            _logger.LogError($"Search trial data failed with unexpected error:{error}");
+            return new StatusCodeResult((int)HttpStatusCode.InternalServerError);
+        }
+
         _logger.LogInformation("Search request served");
-        throw new NotImplementedException();
+
+        return Ok(result.Data);
     }
 
+    /// <summary>
+    /// Upload metadata JSON file
+    /// </summary>
+    /// <param name="file"></param>
+    /// <returns></returns>
     [HttpPost("upload-json")]
     public async Task<IActionResult> Upload(IFormFile file)
     {
@@ -102,7 +130,7 @@ public class TrialsController : ControllerBase
         if (!trialMetadataSavingResult.Success)
         {
             _logger.LogInformation("JSON upload failed due to persistence error:" + trialMetadataSavingResult.Errors.First().Message);
-            return new StatusCodeResult((int) HttpStatusCode.InternalServerError);
+            return new StatusCodeResult((int)HttpStatusCode.InternalServerError);
         }
 
         _logger.LogInformation("JSON upload completed");

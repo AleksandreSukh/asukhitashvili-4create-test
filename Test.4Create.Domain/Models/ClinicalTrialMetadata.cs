@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Test._4Create.Domain.Models;
 
+//TODO: Create separate read model
 public class ClinicalTrialMetadata
 {
     [Required]

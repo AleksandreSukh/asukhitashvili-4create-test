@@ -12,5 +12,6 @@ public static class ErrorCodes
     public class TrialMetadataProcessing //1-100 inclusive
     {
         public const int TrialMetadataPersistenceError = 1;
+        public const int TrialMetadataWasNotFound = 2;
     }
 }

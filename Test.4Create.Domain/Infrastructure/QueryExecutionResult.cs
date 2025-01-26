@@ -8,7 +8,10 @@
 
         public static QueryExecutionResult<T> Ok(T data) => new() { Success = true, Data = data };
 
-        public static QueryExecutionResult<T> WithError(params KeyValuePair<int, string>[] errors)
+        public static QueryExecutionResult<T> WithError(int errorCode, string error) =>
+            WithErrors(new KeyValuePair<int, string>(errorCode, error));
+        
+        public static QueryExecutionResult<T> WithErrors(params KeyValuePair<int, string>[] errors)
         {
             return new()
             {
