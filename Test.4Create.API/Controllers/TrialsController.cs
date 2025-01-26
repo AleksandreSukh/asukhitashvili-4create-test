@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using Test._4Create.API.Validation;
 using Test._4Create.Domain.Models;
 using Test._4Create.Domain.Models.Validation;
 using Test._4Create.Domain.Services;
@@ -54,32 +55,25 @@ namespace Test._4Create.API.Controllers
         {
             _logger.LogInformation("JSON upload initiated");
 
-            if (file == null || file.Length == 0)
-            {
-                _logger.LogError("JSON upload failed due to empty content");
-                return BadRequest("File is not provided or is empty.");
-            }
+            var fileValidationResult = new UploadFileValidator().Validate(file);
 
-            if (!file.ContentType.Equals("application/json", System.StringComparison.OrdinalIgnoreCase))
+            if (!fileValidationResult.IsValid)
             {
-                _logger.LogError("JSON upload failed due to unknown contentType");
-                return BadRequest("Only JSON files are allowed.");
-            }
-
-            string jsonContent;
-
-            using (var streamReader = new StreamReader(file.OpenReadStream()))
-            {
-                jsonContent = await streamReader.ReadToEndAsync();
+                var errorString = string.Join("; ", fileValidationResult.Errors.Select(e => e.ToString()));
+                _logger.LogError($"JSON upload failed due to validation error:{errorString}");
+                return BadRequest(errorString);
             }
 
             var schemaJson = ResourceHelper.GetEmbeddedResource("Resources.ClinicalTrialMetadata.schema.json");
             var schema = await NJsonSchema.JsonSchema.FromJsonAsync(schemaJson);
+
+            var jsonContent = await ReadJsonContent(file);
+
             var errors = schema.Validate(jsonContent);
             if (errors.Count > 0)
             {
                 var errorString = string.Join("; ", errors.Select(e => e.ToString()));
-                _logger.LogError("JSON upload failed due to format errors");
+                _logger.LogError($"JSON upload failed due to format errors:{errorString}");
                 return BadRequest($"JSON format errors:{errorString}");
             }
 
@@ -93,21 +87,30 @@ namespace Test._4Create.API.Controllers
                 return BadRequest(new { Message = "JSON parsing failed", Error = ex.Message });
             }
 
-            var dataValidationResult = new ClinicalTrialMetadataValidator().Validate(clinicalTrialMetadata!);
+            var dataValidationResult = new ClinicalTrialMetadataValidator()
+                .Validate(clinicalTrialMetadata!);
             if (!dataValidationResult.IsValid)
             {
                 var dataValidationErrors = dataValidationResult.Errors.Select(e => e.ErrorMessage);
                 return BadRequest(new { Message = "JSON data validatoin failed", Error = string.Join("; ", dataValidationErrors) });
             }
 
-            await _trialProcessingService.SaveTrialMetadata(clinicalTrialMetadata);
-            
+            await _trialProcessingService.SaveTrialMetadata(clinicalTrialMetadata!);
+
             _logger.LogInformation("JSON upload completed");
 
             return Ok(new
             {
                 Message = "JSON uploaded successfully.",
             });
+        }
+
+        private static async Task<string> ReadJsonContent(IFormFile file)
+        {
+            using var streamReader = new StreamReader(file.OpenReadStream());
+            var jsonContent = await streamReader.ReadToEndAsync();
+
+            return jsonContent;
         }
     }
 
