@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Linq.Expressions;
+using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using Test._4Create.Data;
 using Test._4Create.Domain.Infrastructure;
 using Test._4Create.Domain.Models;
@@ -77,7 +79,37 @@ public class TrialProcessingService
 
     public QueryExecutionResult<List<ClinicalTrialMetadata>> SearchTrialMetadatas(ClinicalTrialMetadataSearchParams clinicalTrialMetadataSearchData)
     {
-        //TODO:
-        throw new NotImplementedException();
+        List<Data.Entities.ClinicalTrialMetadata>? result = null;
+        if (!string.IsNullOrEmpty(clinicalTrialMetadataSearchData.Status))
+        {
+            if (Enum.TryParse<TrialStatus>(clinicalTrialMetadataSearchData.Status, out TrialStatus trialStatus))
+            {
+                var trialStatusString = trialStatus.ToString();
+                result = _unitOfWork.ClinicalTrialMetadataRepository.Get(i => i.Status == trialStatusString).ToList();
+            }
+            else
+            {
+                return QueryExecutionResult<List<ClinicalTrialMetadata>>.WithError(
+                    ErrorCodes.TrialMetadataProcessing.ParseStatusError,
+                    $"Invalid value for status:{clinicalTrialMetadataSearchData.Status}, Valid options are:{string.Join("; ", Enum.GetValues<TrialStatus>().Select(e => e.ToString()))}");
+            }
+        }
+        else
+        {
+            result = _unitOfWork.ClinicalTrialMetadataRepository.Get().ToList();
+        }
+        
+        //TODO: extract mappers 
+        var converted = result.Select(e => new ClinicalTrialMetadata()
+        {
+            TrialId = e.TrialId,
+            Title = e.Title,
+            StartDate = e.StartDate,
+            EndDate = e.EndDate,
+            Status = Enum.Parse<TrialStatus>(e.Status),
+            Participants = e.Participants
+        });
+
+        return QueryExecutionResult<List<ClinicalTrialMetadata>>.Ok(converted.ToList());
     }
 }

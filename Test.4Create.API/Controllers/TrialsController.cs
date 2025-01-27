@@ -68,7 +68,8 @@ public class TrialsController : ControllerBase
         {
             var error = result.Errors.First();
             _logger.LogError($"Search trial data failed with unexpected error:{error}");
-            return new StatusCodeResult((int)HttpStatusCode.InternalServerError);
+
+            return BadRequest(error);
         }
 
         _logger.LogInformation("Search request served");

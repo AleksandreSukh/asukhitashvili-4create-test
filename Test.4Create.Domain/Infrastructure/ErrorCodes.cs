@@ -13,5 +13,6 @@ public static class ErrorCodes
     {
         public const int TrialMetadataPersistenceError = 1;
         public const int TrialMetadataWasNotFound = 2;
+        public const int ParseStatusError = 3;
     }
 }
