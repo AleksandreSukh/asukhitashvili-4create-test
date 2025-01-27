@@ -18,7 +18,7 @@ public class UploadFileValidator : AbstractValidator<IFormFile>
         RuleFor(f => f.Length)
             .NotEqual(0)
             .WithMessage("Provided file is empty")
-            .GreaterThan(MaxFileSizeInBytes)
+            .LessThan(MaxFileSizeInBytes)
             .WithMessage($"File size exceeds the maximum allowed size of {MaxFileSizeInBytes / (1024 * 1024)} MB.");
 
         RuleFor(f => f.ContentType)

@@ -28,7 +28,7 @@ public class TrialsController : ControllerBase
     /// <param name="id"></param>
     /// <returns></returns>
 
-    [HttpGet("{id:string}")]
+    [HttpGet("{id}")]
     public ActionResult<ClinicalTrialMetadata> Get([FromRoute] string id)
     {
         _logger.LogInformation("Get trial request initiated");

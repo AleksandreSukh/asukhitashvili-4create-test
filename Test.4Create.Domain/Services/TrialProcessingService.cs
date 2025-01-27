@@ -17,12 +17,13 @@ public class TrialProcessingService
 
     public async Task<CommandExecutionResult> SaveTrialMetadata(ClinicalTrialMetadata clinicalTrialMetadata)
     {
+        //TODO:Move data validation here and add unit tests
         var endDateOrDefault = clinicalTrialMetadata.EndDate == null && clinicalTrialMetadata.Status == TrialStatus.Ongoing
             ? clinicalTrialMetadata.StartDate.AddMonths(1)
             : clinicalTrialMetadata.EndDate;
 
-        var durationDays = clinicalTrialMetadata.EndDate != null
-            ? (int)(clinicalTrialMetadata.EndDate.Value - clinicalTrialMetadata.StartDate).TotalDays
+        var durationDays = endDateOrDefault != null
+            ? (int)(endDateOrDefault.Value - clinicalTrialMetadata.StartDate).TotalDays
             : (int?)null;
 
         var trialMetadata = new Data.Entities.ClinicalTrialMetadata

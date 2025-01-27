@@ -27,8 +27,7 @@ public class ClinicalTrialMetadataValidator : AbstractValidator<ClinicalTrialMet
 
         RuleFor(x => x.Participants)
             .GreaterThanOrEqualTo(1)
-            .WithMessage("Participants must be at least 1.")
-            .When(x => x.Participants.HasValue);
+            .WithMessage("Participants must be at least 1.");
 
         RuleFor(x => x.Status)
             .IsInEnum()

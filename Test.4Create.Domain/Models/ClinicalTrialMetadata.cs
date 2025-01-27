@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace Test._4Create.Domain.Models;
@@ -23,12 +24,14 @@ public class ClinicalTrialMetadata
     [DataType(DataType.Date)]
     public DateTime? EndDate { get; set; }
 
+    [Required]
     [Range(1, int.MaxValue)]
     [JsonPropertyName("participants")]
-    public int? Participants { get; set; }
+    public int Participants { get; set; }
 
     [Required]
     [JsonPropertyName("status")]
     [EnumDataType(typeof(TrialStatus))]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public TrialStatus Status { get; set; }
 }

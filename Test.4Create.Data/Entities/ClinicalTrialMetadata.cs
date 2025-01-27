@@ -19,9 +19,9 @@ public class ClinicalTrialMetadata
     public DateTime? EndDate { get; set; }
 
     [Range(1, int.MaxValue)]
-    public int? Participants { get; set; }
+    public int Participants { get; set; }
 
-    [Required]
+    [MaxLength(20)]
     public string Status { get; set; }
 
     public int? DurationDays { get; set; }
