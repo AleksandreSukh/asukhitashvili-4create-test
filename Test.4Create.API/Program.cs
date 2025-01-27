@@ -42,12 +42,8 @@ namespace Test._4Create.API
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+            app.UseSwagger();
+            app.UseSwaggerUI();
 
             app.UseAuthorization();
 
@@ -71,7 +67,7 @@ namespace Test._4Create.API
             {
                 ConnectionString = connectionString
             };
-      
+
             var databaseName = builder["Database"] as string;
             builder["Database"] = null;
 
