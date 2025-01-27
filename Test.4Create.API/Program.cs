@@ -1,4 +1,5 @@
 using FluentMigrator.Runner;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Test._4Create.Data;
 using Test._4Create.Data.Migrations;
@@ -18,23 +19,17 @@ namespace Test._4Create.API
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-            Console.WriteLine("Current Env:" + environment);
-
-
             Func<IServiceProvider, string> connectionStringResolver = (c) => c.GetRequiredService<IConfiguration>()
-                .GetValue<string>("DataAccess:SQLConnectionString") ?? throw new InvalidOperationException("Connection string must be defined in configuration");
+                          .GetValue<string>("SQLConnectionString") ?? throw new InvalidOperationException("Connection string must be defined in configuration");
 
             builder.Services.AddScoped(c =>
             {
-                    var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-                    Console.WriteLine("Current Env:"+environment);
-                    var connectionString = connectionStringResolver(c);
-                    var optionsBuilder = new DbContextOptionsBuilder<TrialDbContext>();
-                    optionsBuilder.UseSqlServer(connectionString, o => o.EnableRetryOnFailure().CommandTimeout((int)TimeSpan.FromMinutes(5).TotalSeconds));
+                var connectionString = connectionStringResolver(c);
+                var optionsBuilder = new DbContextOptionsBuilder<TrialDbContext>();
+                optionsBuilder.UseSqlServer(connectionString, o => o.EnableRetryOnFailure().CommandTimeout((int)TimeSpan.FromMinutes(5).TotalSeconds));
 
-                    return new TrialDbContext(optionsBuilder.Options);
-                }
+                return new TrialDbContext(optionsBuilder.Options);
+            }
             );
 
             builder.Services.AddFluentMigratorCore()
@@ -61,6 +56,9 @@ namespace Test._4Create.API
 
             using (var scope = app.Services.CreateScope())
             {
+                //TODO: Used for testing only - should be removed in production code
+                CreateDatabaseIfNotExists(connectionStringResolver, scope);
+
                 var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
                 runner.MigrateUp();
             }
@@ -68,6 +66,26 @@ namespace Test._4Create.API
             app.MapControllers();
 
             app.Run();
+        }
+
+        private static void CreateDatabaseIfNotExists(Func<IServiceProvider, string> connectionStringResolver, IServiceScope scope)
+        {
+            var connectionString = connectionStringResolver(scope.ServiceProvider);
+
+            System.Data.Common.DbConnectionStringBuilder builder = new System.Data.Common.DbConnectionStringBuilder();
+            builder.ConnectionString = connectionString;
+            var databaseName = builder["Database"] as string;
+            var serverName = builder["Server"];
+            builder["Database"] = null;
+
+            using (var connection = new SqlConnection(builder.ConnectionString))
+            {
+                connection.Open();
+
+                // Check if the database exists
+                var cmd = new SqlCommand($"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '{databaseName}') BEGIN CREATE DATABASE {databaseName}; END", connection);
+                cmd.ExecuteNonQuery();
+            }
         }
     }
 }
