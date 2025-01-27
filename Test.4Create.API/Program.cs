@@ -13,13 +13,11 @@ namespace Test._4Create.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            Func<IServiceProvider, string> connectionStringResolver = (c) => c.GetRequiredService<IConfiguration>()
+            Func<IServiceProvider, string> connectionStringResolver = c => c.GetRequiredService<IConfiguration>()
                           .GetValue<string>("SQLConnectionString") ?? throw new InvalidOperationException("Connection string must be defined in configuration");
 
             builder.Services.AddScoped(c =>
@@ -56,9 +54,7 @@ namespace Test._4Create.API
 
             using (var scope = app.Services.CreateScope())
             {
-                //TODO: Used for testing only - should be removed in production code
-                CreateDatabaseIfNotExists(connectionStringResolver, scope);
-
+                CreateDatabaseIfNotExists(connectionStringResolver(scope.ServiceProvider));
                 var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
                 runner.MigrateUp();
             }
@@ -68,21 +64,21 @@ namespace Test._4Create.API
             app.Run();
         }
 
-        private static void CreateDatabaseIfNotExists(Func<IServiceProvider, string> connectionStringResolver, IServiceScope scope)
+        //Used for testing only - should be removed in production code
+        private static void CreateDatabaseIfNotExists(string connectionString)
         {
-            var connectionString = connectionStringResolver(scope.ServiceProvider);
-
-            System.Data.Common.DbConnectionStringBuilder builder = new System.Data.Common.DbConnectionStringBuilder();
-            builder.ConnectionString = connectionString;
+            var builder = new System.Data.Common.DbConnectionStringBuilder()
+            {
+                ConnectionString = connectionString
+            };
+      
             var databaseName = builder["Database"] as string;
-            var serverName = builder["Server"];
             builder["Database"] = null;
 
             using (var connection = new SqlConnection(builder.ConnectionString))
             {
                 connection.Open();
 
-                // Check if the database exists
                 var cmd = new SqlCommand($"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '{databaseName}') BEGIN CREATE DATABASE {databaseName}; END", connection);
                 cmd.ExecuteNonQuery();
             }
