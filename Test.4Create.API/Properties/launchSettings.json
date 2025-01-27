@@ -5,7 +5,8 @@
       "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "SQLConnectionString": "Server=tcp:127.0.0.1,1433;Database=ClinicalTrialsDb;User Id=sa;Password=TestPasss!;TrustServerCertificate=True;"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5045"
