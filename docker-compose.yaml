@@ -1,0 +1,47 @@
+﻿version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Test.4Create.API/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Debug
+    ports:
+      - "8080:8080"
+    environment:
+      DOTNET_RUNNING_IN_CONTAINER: "true"
+      ASPNETCORE_ENVIRONMENT: "Development"
+      SQLConnectionString: "Server=db;Database=ClinicalTrialsDb;User Id=sa;Password=TestPasss!;TrustServerCertificate=True;"
+    user: "${APP_UID:-0}" # Default to root if APP_UID is not set
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  db:
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: TestPasss!
+
+    ports:
+      - "1433:1433" # Expose the SQL Server container on port 1433
+    networks:
+      - app-network
+    # mssql server image isn't available for arm64 architecture, so we use azure-sql instead
+    image: mcr.microsoft.com/azure-sql-edge:1.0.4
+    # If you really want to use MS SQL Server, uncomment the following line
+    #image: mcr.microsoft.com/mssql/server
+    restart: always
+    healthcheck:
+        test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPasss! -Q 'SELECT 1' || exit 1"]
+        interval: 10s
+        retries: 10
+        start_period: 10s
+        timeout: 3s  
+        
+networks:
+  app-network:
+    driver: bridge
+         
+       
