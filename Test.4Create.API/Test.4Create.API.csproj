@@ -13,6 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentMigrator" Version="6.2.0" />
+    <PackageReference Include="FluentMigrator.Runner.SqlServer" Version="6.2.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
     <PackageReference Include="NJsonSchema" Version="11.1.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
@@ -24,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Resources\ClinicalTrialMetadata.schema.json" />
+    <EmbeddedResource Include="Resources\ClinicalTrialMetadata.schema.json" />
   </ItemGroup>
 
 </Project>

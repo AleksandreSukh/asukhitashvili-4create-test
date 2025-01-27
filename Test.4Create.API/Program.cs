@@ -1,6 +1,8 @@
-
+using FluentMigrator.Runner;
 using Microsoft.EntityFrameworkCore;
 using Test._4Create.Data;
+using Test._4Create.Data.Migrations;
+using Test._4Create.Domain.Services;
 
 namespace Test._4Create.API
 {
@@ -13,19 +15,37 @@ namespace Test._4Create.API
             // Add services to the container.
 
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            Console.WriteLine("Current Env:" + environment);
+
+
+            Func<IServiceProvider, string> connectionStringResolver = (c) => c.GetRequiredService<IConfiguration>()
+                .GetValue<string>("DataAccess:SQLConnectionString") ?? throw new InvalidOperationException("Connection string must be defined in configuration");
+
             builder.Services.AddScoped(c =>
             {
-                var connectionString = c.GetRequiredService<IConfiguration>()
-                    .GetValue<string>("DataAccess:SQLConnectionString");
+                    var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+                    Console.WriteLine("Current Env:"+environment);
+                    var connectionString = connectionStringResolver(c);
+                    var optionsBuilder = new DbContextOptionsBuilder<TrialDbContext>();
+                    optionsBuilder.UseSqlServer(connectionString, o => o.EnableRetryOnFailure().CommandTimeout((int)TimeSpan.FromMinutes(5).TotalSeconds));
 
-                return TrialDbContextFactory.CreateDbContext(connectionString);
-            });
+                    return new TrialDbContext(optionsBuilder.Options);
+                }
+            );
+
+            builder.Services.AddFluentMigratorCore()
+                .ConfigureRunner(rb => rb
+                    .AddSqlServer()
+                    .WithGlobalConnectionString(connectionStringResolver)
+                    .ScanIn(typeof(InitializeDb).Assembly).For.Migrations())
+                .AddLogging(lb => lb.AddFluentMigratorConsole());
 
             builder.Services.AddScoped(c => new UnitOfWork(c.GetRequiredService<TrialDbContext>()));
+            builder.Services.AddScoped<TrialProcessingService>();
 
             var app = builder.Build();
 
@@ -38,6 +58,12 @@ namespace Test._4Create.API
 
             app.UseAuthorization();
 
+
+            using (var scope = app.Services.CreateScope())
+            {
+                var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
+                runner.MigrateUp();
+            }
 
             app.MapControllers();
 
