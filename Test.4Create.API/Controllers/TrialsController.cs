@@ -1,7 +1,7 @@
 using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
-using Test._4Create.API.Validation;
+using Test._4Create.API.InputValidation;
 using Test._4Create.Domain.Models;
 using Test._4Create.Domain.Models.Validation;
 using Test._4Create.Domain.Services;
@@ -96,10 +96,10 @@ public class TrialsController : ControllerBase
             return BadRequest(errorString);
         }
 
+        var jsonContent = await ReadJsonContent(file);
+
         var schemaJson = ResourceHelper.GetEmbeddedResource("Resources.ClinicalTrialMetadata.schema.json");
         var schema = await NJsonSchema.JsonSchema.FromJsonAsync(schemaJson);
-
-        var jsonContent = await ReadJsonContent(file);
 
         var errors = schema.Validate(jsonContent);
         if (errors.Count > 0)

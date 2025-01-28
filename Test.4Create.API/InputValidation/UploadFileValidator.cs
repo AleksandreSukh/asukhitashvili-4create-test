@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 
-namespace Test._4Create.API.Validation;
+namespace Test._4Create.API.InputValidation;
 
 public class UploadFileValidator : AbstractValidator<IFormFile>
 {
