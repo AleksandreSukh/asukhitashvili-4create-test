@@ -2,7 +2,7 @@
 
 namespace Test._4Create.Domain.Models.Validation;
 
-public class ClinicalTrialMetadataValidator : AbstractValidator<ClinicalTrialMetadata>
+public class ClinicalTrialMetadataValidator : AbstractValidator<ClinicalTrialMetadataInputModel>, IClinicalTrialMetadataValidator
 {
     public ClinicalTrialMetadataValidator()
     {
@@ -19,11 +19,6 @@ public class ClinicalTrialMetadataValidator : AbstractValidator<ClinicalTrialMet
             .WithMessage("Start date is required.")
             .Must(BeAValidDate)
             .WithMessage("Start date must be a valid date.");
-
-        RuleFor(x => x.EndDate)
-            .Must(BeAValidDate)
-            .WithMessage("End date must be a valid date.")
-            .When(x => x.EndDate.HasValue);
 
         RuleFor(x => x.Participants)
             .GreaterThanOrEqualTo(1)

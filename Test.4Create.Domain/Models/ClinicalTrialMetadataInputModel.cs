@@ -1,11 +1,9 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace Test._4Create.Domain.Models;
 
-//TODO: Create separate read model
-public class ClinicalTrialMetadata
+public class ClinicalTrialMetadataInputModel
 {
     [Required]
     [JsonPropertyName("trialId")]

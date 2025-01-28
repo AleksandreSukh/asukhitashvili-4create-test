@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Test._4Create.Data;
 using Test._4Create.Data.Migrations;
+using Test._4Create.Domain.Models.Validation;
 using Test._4Create.Domain.Services;
 
 namespace Test._4Create.API
@@ -37,8 +38,9 @@ namespace Test._4Create.API
                     .ScanIn(typeof(InitializeDb).Assembly).For.Migrations())
                 .AddLogging(lb => lb.AddFluentMigratorConsole());
 
-            builder.Services.AddScoped(c => new UnitOfWork(c.GetRequiredService<TrialDbContext>()));
+            builder.Services.AddScoped<IUnitOfWork>(c => new UnitOfWork(c.GetRequiredService<TrialDbContext>()));
             builder.Services.AddScoped<TrialProcessingService>();
+            builder.Services.AddSingleton<IClinicalTrialMetadataValidator, ClinicalTrialMetadataValidator>();
 
             var app = builder.Build();
 

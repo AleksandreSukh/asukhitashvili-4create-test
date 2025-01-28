@@ -29,13 +29,13 @@ public class TrialsController : ControllerBase
     /// <returns></returns>
 
     [HttpGet("{id}")]
-    public ActionResult<ClinicalTrialMetadata> Get([FromRoute] string id)
+    public ActionResult<ClinicalTrialMetadataReadModel> Get([FromRoute] string id)
     {
         _logger.LogInformation("Get trial request initiated");
 
         var result = _trialProcessingService.GetTrialMetadataById(id);
 
-        if (!result.IsSuccess)
+        if (!result.IsSuccessful)
         {
             var error = result.Errors.First();
             if (error.Code == ErrorCodes.TrialMetadataProcessing.TrialMetadataWasNotFound)
@@ -58,13 +58,13 @@ public class TrialsController : ControllerBase
     /// <returns></returns>
 
     [HttpGet("search")]
-    public ActionResult<List<ClinicalTrialMetadata>> Search([FromQuery] string? status)
+    public ActionResult<List<ClinicalTrialMetadataReadModel>> Search([FromQuery] string? status)
     {
         _logger.LogInformation("Search request initiated");
 
         var result = _trialProcessingService.SearchTrialMetadatas(new ClinicalTrialMetadataSearchParams { Status = status });
 
-        if (!result.IsSuccess)
+        if (!result.IsSuccessful)
         {
             var error = result.Errors.First();
             _logger.LogError($"Search trial data failed with unexpected error:{error}");
@@ -109,28 +109,27 @@ public class TrialsController : ControllerBase
             return BadRequest($"JSON format errors:{errorString}");
         }
 
-        ClinicalTrialMetadata? clinicalTrialMetadata;
+        ClinicalTrialMetadataInputModel? clinicalTrialMetadata;
         try
         {
-            clinicalTrialMetadata = JsonSerializer.Deserialize<ClinicalTrialMetadata>(jsonContent);
+            clinicalTrialMetadata = JsonSerializer.Deserialize<ClinicalTrialMetadataInputModel>(jsonContent);
         }
         catch (JsonException ex)
         {
             return BadRequest(new { Message = "JSON parsing failed", Error = ex.Message });
         }
 
-        var dataValidationResult = new ClinicalTrialMetadataValidator().Validate(clinicalTrialMetadata!);
-        if (!dataValidationResult.IsValid)
-        {
-            var dataValidationErrors = dataValidationResult.Errors.Select(e => e.ErrorMessage);
-            return BadRequest(new { Message = "JSON data validatoin failed", Error = string.Join("; ", dataValidationErrors) });
-        }
+        var trialMetadataSavingResult = await _trialProcessingService.ProcessTrialMetadata(clinicalTrialMetadata!);
 
-        var trialMetadataSavingResult = await _trialProcessingService.SaveTrialMetadata(clinicalTrialMetadata!);
-
-        if (!trialMetadataSavingResult.IsSuccess)
+        if (!trialMetadataSavingResult.IsSuccessful)
         {
-            _logger.LogInformation("JSON upload failed due to persistence error:" + trialMetadataSavingResult.Errors.First().Message);
+            var error = trialMetadataSavingResult.Errors!.First();
+            if (error.Code == ErrorCodes.TrialMetadataProcessing.TrialMetadataValidationError)
+            {
+                return BadRequest(new { Message = "JSON data validatoin failed", Error = error.Message });
+            }
+
+            _logger.LogInformation("JSON upload failed due to persistence error:" + error.Message);
             return new StatusCodeResult((int)HttpStatusCode.InternalServerError);
         }
 

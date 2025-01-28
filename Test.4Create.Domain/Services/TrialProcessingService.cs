@@ -1,25 +1,34 @@
-﻿using System.Linq.Expressions;
-using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
-using Test._4Create.Data;
+﻿using Test._4Create.Data;
+using Test._4Create.Data.Entities;
 using Test._4Create.Domain.Infrastructure;
+using Test._4Create.Domain.Mappers;
 using Test._4Create.Domain.Models;
+using Test._4Create.Domain.Models.Validation;
 
 namespace Test._4Create.Domain.Services;
 
 public class TrialProcessingService
 {
-    private readonly UnitOfWork _unitOfWork;
-    private readonly ILogger<TrialProcessingService> _logger;
-    public TrialProcessingService(UnitOfWork unitOfWork, ILogger<TrialProcessingService> logger)
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IClinicalTrialMetadataValidator _clinicalTrialMetadataValidator;
+    public TrialProcessingService(
+        IUnitOfWork unitOfWork, 
+        IClinicalTrialMetadataValidator clinicalTrialMetadataValidator)
     {
         _unitOfWork = unitOfWork;
-        _logger = logger;
+        _clinicalTrialMetadataValidator = clinicalTrialMetadataValidator;
     }
 
-    public async Task<CommandExecutionResult> SaveTrialMetadata(ClinicalTrialMetadata clinicalTrialMetadata)
+    public async Task<CommandExecutionResult> ProcessTrialMetadata(ClinicalTrialMetadataInputModel clinicalTrialMetadata)
     {
-        //TODO:Move data validation here and add unit tests
+        var dataValidationResult = _clinicalTrialMetadataValidator.Validate(clinicalTrialMetadata);
+        if (!dataValidationResult.IsValid)
+        {
+            var dataValidationErrors = dataValidationResult.Errors.Select(e => e.ErrorMessage);
+            return CommandExecutionResult.WithError(ErrorCodes.TrialMetadataProcessing.TrialMetadataValidationError,
+                string.Join("; ", dataValidationErrors));
+        }
+
         var endDateOrDefault = clinicalTrialMetadata.EndDate == null && clinicalTrialMetadata.Status == TrialStatus.Ongoing
             ? clinicalTrialMetadata.StartDate.AddMonths(1)
             : clinicalTrialMetadata.EndDate;
@@ -28,7 +37,7 @@ public class TrialProcessingService
             ? (int)(endDateOrDefault.Value - clinicalTrialMetadata.StartDate).TotalDays
             : (int?)null;
 
-        var trialMetadata = new Data.Entities.ClinicalTrialMetadata
+        var trialMetadata = new ClinicalTrialMetadata
         {
             Title = clinicalTrialMetadata.Title,
             Status = clinicalTrialMetadata.Status.ToString(),
@@ -39,77 +48,63 @@ public class TrialProcessingService
             DurationDays = durationDays
         };
 
-        _unitOfWork.ClinicalTrialMetadataRepository.Insert(trialMetadata);
+        _unitOfWork.ClinicalTrialMetadataGenericRepository.Insert(trialMetadata);
         try
         {
             await _unitOfWork.SaveAsync();
         }
         catch (Exception e)
         {
-            _logger.LogError($"Error occured while trying to save {nameof(Data.Entities.ClinicalTrialMetadata)} in database. Error:{e}");
             return CommandExecutionResult.WithError(ErrorCodes.TrialMetadataProcessing.TrialMetadataPersistenceError, e.Message);
         }
 
         return CommandExecutionResult.Ok();
     }
 
-    public QueryExecutionResult<ClinicalTrialMetadata> GetTrialMetadataById(string id)
+    public QueryExecutionResult<ClinicalTrialMetadataReadModel> GetTrialMetadataById(string id)
     {
-        var clinicalTrialMetadata = _unitOfWork.ClinicalTrialMetadataRepository.Get(i => i.TrialId == id);
-        if (!clinicalTrialMetadata.Any())
+        if (id == null)
         {
-            return QueryExecutionResult<ClinicalTrialMetadata>.WithError(
+            throw new ArgumentNullException(nameof(id));
+        }
+
+        var clinicalTrialMetadata = _unitOfWork.ClinicalTrialMetadataGenericRepository.Get(i => i.TrialId == id).FirstOrDefault();
+        if (clinicalTrialMetadata == null)
+        {
+            return QueryExecutionResult<ClinicalTrialMetadataReadModel>.WithError(
                 ErrorCodes.TrialMetadataProcessing.TrialMetadataWasNotFound, $"Medatada with id:{id} wasn't found");
         }
 
-        var foundItem = clinicalTrialMetadata.First();
-
-        var result = new ClinicalTrialMetadata()
-        {
-            Title = foundItem.Title,
-            TrialId = foundItem.TrialId,
-            StartDate = foundItem.StartDate,
-            EndDate = foundItem.EndDate,
-            Status = Enum.Parse<TrialStatus>(foundItem.Status),
-            Participants = foundItem.Participants
-        };
-
-        return QueryExecutionResult<ClinicalTrialMetadata>.Ok(result);
+        return QueryExecutionResult<ClinicalTrialMetadataReadModel>.Ok(clinicalTrialMetadata.ToClinicalTrialMetadataReadModel());
     }
 
-    public QueryExecutionResult<List<ClinicalTrialMetadata>> SearchTrialMetadatas(ClinicalTrialMetadataSearchParams clinicalTrialMetadataSearchData)
+    public QueryExecutionResult<List<ClinicalTrialMetadataReadModel>> SearchTrialMetadatas(ClinicalTrialMetadataSearchParams filter)
     {
-        List<Data.Entities.ClinicalTrialMetadata>? result = null;
-        if (!string.IsNullOrEmpty(clinicalTrialMetadataSearchData.Status))
+        if (filter == null)
         {
-            if (Enum.TryParse<TrialStatus>(clinicalTrialMetadataSearchData.Status, out TrialStatus trialStatus))
+            throw new ArgumentNullException(nameof(filter));
+        }
+
+        List<ClinicalTrialMetadata>? result;
+        if (!string.IsNullOrEmpty(filter.Status))
+        {
+            if (Enum.TryParse(filter.Status, out TrialStatus trialStatus))
             {
                 var trialStatusString = trialStatus.ToString();
-                result = _unitOfWork.ClinicalTrialMetadataRepository.Get(i => i.Status == trialStatusString).ToList();
+                result = _unitOfWork.ClinicalTrialMetadataGenericRepository.Get(i => i.Status == trialStatusString).ToList();
             }
             else
             {
-                return QueryExecutionResult<List<ClinicalTrialMetadata>>.WithError(
+                return QueryExecutionResult<List<ClinicalTrialMetadataReadModel>>.WithError(
                     ErrorCodes.TrialMetadataProcessing.ParseStatusError,
-                    $"Invalid value for status:{clinicalTrialMetadataSearchData.Status}, Valid options are:{string.Join("; ", Enum.GetValues<TrialStatus>().Select(e => e.ToString()))}");
+                    $"Invalid value for status:{filter.Status}, Valid options are:{string.Join("; ", Enum.GetValues<TrialStatus>().Select(e => e.ToString()))}");
             }
         }
         else
         {
-            result = _unitOfWork.ClinicalTrialMetadataRepository.Get().ToList();
+            result = _unitOfWork.ClinicalTrialMetadataGenericRepository.Get().ToList();
         }
-        
-        //TODO: extract mappers 
-        var converted = result.Select(e => new ClinicalTrialMetadata()
-        {
-            TrialId = e.TrialId,
-            Title = e.Title,
-            StartDate = e.StartDate,
-            EndDate = e.EndDate,
-            Status = Enum.Parse<TrialStatus>(e.Status),
-            Participants = e.Participants
-        });
 
-        return QueryExecutionResult<List<ClinicalTrialMetadata>>.Ok(converted.ToList());
+        return QueryExecutionResult<List<ClinicalTrialMetadataReadModel>>.Ok(result.Select(e => e.ToClinicalTrialMetadataReadModel()).ToList());
     }
 }

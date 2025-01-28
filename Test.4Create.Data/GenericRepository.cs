@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Test._4Create.Data;
 
-public class GenericRepository<TEntity> where TEntity : class
+public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEntity : class
 {
     internal readonly TrialDbContext Context;
     internal readonly DbSet<TEntity> DbSet;
