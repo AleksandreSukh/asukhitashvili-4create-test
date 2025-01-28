@@ -14,10 +14,9 @@ public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEnt
         DbSet = context.Set<TEntity>();
     }
 
-    public virtual IEnumerable<TEntity> Get(
-        Expression<Func<TEntity, bool>>? filter = null,
-        Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
-        string includeProperties = "")
+    public virtual IEnumerable<TEntity> Get(Expression<Func<TEntity, bool>>? filter = null,
+                                            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
+                                            string includeProperties = "")
     {
         IQueryable<TEntity> query = DbSet;
 
@@ -36,15 +35,17 @@ public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEnt
         {
             return orderBy(query).ToList();
         }
-        else
-        {
-            return query.ToList();
-        }
+
+        return query.ToList();
     }
 
     public virtual TEntity? GetById(object id)
     {
-        if (id == null) throw new ArgumentNullException(nameof(id));
+        if (id == null)
+        {
+            throw new ArgumentNullException(nameof(id));
+        }
+
         return DbSet.Find(id);
     }
 
@@ -55,7 +56,7 @@ public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEnt
 
     public virtual void Delete(object id)
     {
-        TEntity entityToDelete = DbSet.Find(id) ?? throw new InvalidOperationException($"Record with id:{id} couldn't be found into DbSet of type \"{typeof(TEntity).FullName}\"");
+        var entityToDelete = DbSet.Find(id) ?? throw new InvalidOperationException($"Record with id:{id} couldn't be found into DbSet of type \"{typeof(TEntity).FullName}\"");
         Delete(entityToDelete);
     }
 
@@ -65,6 +66,7 @@ public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEnt
         {
             DbSet.Attach(entityToDelete);
         }
+
         DbSet.Remove(entityToDelete);
     }
 

@@ -8,7 +8,7 @@ public class ResourceHelper
     {
         var assembly = Assembly.GetExecutingAssembly();
         var resourcePath = assembly.GetManifestResourceNames()
-            .SingleOrDefault(str => str.EndsWith(resourceName, StringComparison.OrdinalIgnoreCase));
+                                   .SingleOrDefault(str => str.EndsWith(resourceName, StringComparison.OrdinalIgnoreCase));
 
         if (resourcePath == null)
         {

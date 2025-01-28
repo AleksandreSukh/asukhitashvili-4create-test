@@ -9,11 +9,11 @@ namespace Test._4Create.Domain.Services;
 
 public class TrialProcessingService
 {
-    private readonly IUnitOfWork _unitOfWork;
     private readonly IClinicalTrialMetadataValidator _clinicalTrialMetadataValidator;
-    public TrialProcessingService(
-        IUnitOfWork unitOfWork, 
-        IClinicalTrialMetadataValidator clinicalTrialMetadataValidator)
+    private readonly IUnitOfWork _unitOfWork;
+
+    public TrialProcessingService(IUnitOfWork unitOfWork,
+                                  IClinicalTrialMetadataValidator clinicalTrialMetadataValidator)
     {
         _unitOfWork = unitOfWork;
         _clinicalTrialMetadataValidator = clinicalTrialMetadataValidator;
@@ -26,7 +26,7 @@ public class TrialProcessingService
         {
             var dataValidationErrors = dataValidationResult.Errors.Select(e => e.ErrorMessage);
             return CommandExecutionResult.WithError(ErrorCodes.TrialMetadataProcessing.TrialMetadataValidationError,
-                string.Join("; ", dataValidationErrors));
+                                                    string.Join("; ", dataValidationErrors));
         }
 
         var endDateOrDefault = clinicalTrialMetadata.EndDate == null && clinicalTrialMetadata.Status == TrialStatus.Ongoing
@@ -34,8 +34,8 @@ public class TrialProcessingService
             : clinicalTrialMetadata.EndDate;
 
         var durationDays = endDateOrDefault != null
-            ? (int)(endDateOrDefault.Value - clinicalTrialMetadata.StartDate).TotalDays
-            : (int?)null;
+            ? (int) (endDateOrDefault.Value - clinicalTrialMetadata.StartDate).TotalDays
+            : (int?) null;
 
         var trialMetadata = new ClinicalTrialMetadata
         {

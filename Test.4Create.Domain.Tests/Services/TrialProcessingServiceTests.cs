@@ -1,4 +1,5 @@
-﻿using FluentValidation.Results;
+﻿using System.Linq.Expressions;
+using FluentValidation.Results;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using Test._4Create.Data;
@@ -11,18 +12,13 @@ using ClinicalTrialMetadata = Test._4Create.Data.Entities.ClinicalTrialMetadata;
 
 namespace Test._4Create.Domain.Tests.Services;
 
-using System;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
-using NUnit.Framework;
-
 [TestFixture]
 public class TrialProcessingServiceTests
 {
-    private IUnitOfWork _unitOfWork;
-    private IGenericRepository<ClinicalTrialMetadata> _trialMetadataRepository;
-    private IClinicalTrialMetadataValidator _validator;
     private TrialProcessingService _service;
+    private IGenericRepository<ClinicalTrialMetadata> _trialMetadataRepository;
+    private IUnitOfWork _unitOfWork;
+    private IClinicalTrialMetadataValidator _validator;
 
     [SetUp]
     public void Setup()
@@ -30,9 +26,9 @@ public class TrialProcessingServiceTests
         _unitOfWork = Substitute.For<IUnitOfWork>();
         _trialMetadataRepository = Substitute.For<IGenericRepository<ClinicalTrialMetadata>>();
         _unitOfWork.ClinicalTrialMetadataGenericRepository
-            .Returns(_trialMetadataRepository);
+                   .Returns(_trialMetadataRepository);
         _validator = Substitute.For<IClinicalTrialMetadataValidator>();
-        _service = new TrialProcessingService(_unitOfWork, _validator);
+        _service = new(_unitOfWork, _validator);
     }
 
     [TearDown]
@@ -83,7 +79,7 @@ public class TrialProcessingServiceTests
 
         var validationErrors = new List<ValidationFailure>
         {
-            new ("Title" , "Title is required.")
+            new("Title", "Title is required.")
         };
 
         _validator.Validate(input).Returns(new ValidationResult(validationErrors));
@@ -146,7 +142,7 @@ public class TrialProcessingServiceTests
 
         ClinicalTrialMetadata? savedMetadata = null;
         _trialMetadataRepository.When(r => r.Insert(Arg.Any<ClinicalTrialMetadata>()))
-            .Do(args => savedMetadata = args.Arg<ClinicalTrialMetadata>());
+                                .Do(args => savedMetadata = args.Arg<ClinicalTrialMetadata>());
 
         _unitOfWork.SaveAsync().Returns(Task.CompletedTask);
 
@@ -157,7 +153,7 @@ public class TrialProcessingServiceTests
         Assert.That(result.IsSuccessful);
         Assert.That(savedMetadata, Is.Not.Null);
         Assert.That(savedMetadata.EndDate, Is.EqualTo(input.StartDate.AddMonths(1)));
-        Assert.That(savedMetadata.DurationDays, Is.EqualTo((int)(input.StartDate.AddMonths(1) - input.StartDate).TotalDays));
+        Assert.That(savedMetadata.DurationDays, Is.EqualTo((int) (input.StartDate.AddMonths(1) - input.StartDate).TotalDays));
     }
 
     [Test]
@@ -176,10 +172,10 @@ public class TrialProcessingServiceTests
         };
 
         _trialMetadataRepository.Get(
-                    Arg.Any<Expression<Func<ClinicalTrialMetadata, bool>>?>(),
-                    null,
-                    Arg.Any<string>())
-            .Returns(new List<ClinicalTrialMetadata> { clinicalTrialEntity });
+                                    Arg.Any<Expression<Func<ClinicalTrialMetadata, bool>>?>(),
+                                    null,
+                                    Arg.Any<string>())
+                                .Returns(new List<ClinicalTrialMetadata> { clinicalTrialEntity });
 
         // Act
         var result = _service.GetTrialMetadataById(trialId);
@@ -196,9 +192,9 @@ public class TrialProcessingServiceTests
         // Arrange
         var trialId = "non-existent-id";
         _trialMetadataRepository.Get(
-                Arg.Any<Expression<Func<ClinicalTrialMetadata, bool>>?>(),
-                Arg.Any<Func<IQueryable<ClinicalTrialMetadata>, IOrderedQueryable<ClinicalTrialMetadata>>?>())
-            .Returns(Enumerable.Empty<ClinicalTrialMetadata>().AsQueryable());
+                                    Arg.Any<Expression<Func<ClinicalTrialMetadata, bool>>?>(),
+                                    Arg.Any<Func<IQueryable<ClinicalTrialMetadata>, IOrderedQueryable<ClinicalTrialMetadata>>?>())
+                                .Returns(Enumerable.Empty<ClinicalTrialMetadata>().AsQueryable());
 
         // Act
         var result = _service.GetTrialMetadataById(trialId);
@@ -233,16 +229,15 @@ public class TrialProcessingServiceTests
         };
 
         _trialMetadataRepository.Get(
-                Arg.Any<Expression<Func<ClinicalTrialMetadata, bool>>?>(),
-                Arg.Any<Func<IQueryable<ClinicalTrialMetadata>, IOrderedQueryable<ClinicalTrialMetadata>>?>())
-            .Returns(new List<ClinicalTrialMetadata> { clinicalTrialEntity }.AsQueryable());
+                                    Arg.Any<Expression<Func<ClinicalTrialMetadata, bool>>?>(),
+                                    Arg.Any<Func<IQueryable<ClinicalTrialMetadata>, IOrderedQueryable<ClinicalTrialMetadata>>?>())
+                                .Returns(new List<ClinicalTrialMetadata> { clinicalTrialEntity }.AsQueryable());
 
         // Act & Assert
         Assert.Throws<ArgumentException>(() => _service.GetTrialMetadataById(trialId));
     }
 
     //3
-
 
     [Test]
     public void SearchTrialMetadatas_ValidStatus_ReturnsMatchingResults()
@@ -251,7 +246,7 @@ public class TrialProcessingServiceTests
         var searchParams = new ClinicalTrialMetadataSearchParams { Status = "Completed" };
         var clinicalTrialEntities = new List<ClinicalTrialMetadata>
         {
-            new ClinicalTrialMetadata
+            new()
             {
                 TrialId = "trial-1",
                 Title = "Trial 1",
@@ -260,7 +255,7 @@ public class TrialProcessingServiceTests
                 Status = "Completed",
                 Participants = 50
             },
-            new ClinicalTrialMetadata
+            new()
             {
                 TrialId = "trial-2",
                 Title = "Trial 2",
@@ -272,9 +267,9 @@ public class TrialProcessingServiceTests
         };
 
         _trialMetadataRepository.Get(
-                Arg.Any<Expression<Func<ClinicalTrialMetadata, bool>>?>(),
-                Arg.Any<Func<IQueryable<ClinicalTrialMetadata>, IOrderedQueryable<ClinicalTrialMetadata>>?>())
-            .Returns(clinicalTrialEntities.AsQueryable());
+                                    Arg.Any<Expression<Func<ClinicalTrialMetadata, bool>>?>(),
+                                    Arg.Any<Func<IQueryable<ClinicalTrialMetadata>, IOrderedQueryable<ClinicalTrialMetadata>>?>())
+                                .Returns(clinicalTrialEntities.AsQueryable());
 
         // Act
         var result = _service.SearchTrialMetadatas(searchParams);
@@ -310,7 +305,7 @@ public class TrialProcessingServiceTests
         var searchParams = new ClinicalTrialMetadataSearchParams { Status = string.Empty };
         var clinicalTrialEntities = new List<ClinicalTrialMetadata>
         {
-            new ClinicalTrialMetadata
+            new()
             {
                 TrialId = "trial-1",
                 Title = "Trial 1",
@@ -319,7 +314,7 @@ public class TrialProcessingServiceTests
                 Status = "Completed",
                 Participants = 50
             },
-            new ClinicalTrialMetadata
+            new()
             {
                 TrialId = "trial-2",
                 Title = "Trial 2",
@@ -331,9 +326,9 @@ public class TrialProcessingServiceTests
         };
 
         _trialMetadataRepository.Get(
-                Arg.Any<Expression<Func<ClinicalTrialMetadata, bool>>?>(),
-                Arg.Any<Func<IQueryable<ClinicalTrialMetadata>, IOrderedQueryable<ClinicalTrialMetadata>>?>())
-            .Returns(clinicalTrialEntities.AsQueryable());
+                                    Arg.Any<Expression<Func<ClinicalTrialMetadata, bool>>?>(),
+                                    Arg.Any<Func<IQueryable<ClinicalTrialMetadata>, IOrderedQueryable<ClinicalTrialMetadata>>?>())
+                                .Returns(clinicalTrialEntities.AsQueryable());
 
         // Act
         var result = _service.SearchTrialMetadatas(searchParams);
@@ -357,9 +352,9 @@ public class TrialProcessingServiceTests
         // Arrange
         var searchParams = new ClinicalTrialMetadataSearchParams { Status = "Completed" };
         _trialMetadataRepository.Get(
-                Arg.Any<Expression<Func<ClinicalTrialMetadata, bool>>?>(),
-                Arg.Any<Func<IQueryable<ClinicalTrialMetadata>, IOrderedQueryable<ClinicalTrialMetadata>>?>())
-            .Returns(Enumerable.Empty<ClinicalTrialMetadata>().AsQueryable());
+                                    Arg.Any<Expression<Func<ClinicalTrialMetadata, bool>>?>(),
+                                    Arg.Any<Func<IQueryable<ClinicalTrialMetadata>, IOrderedQueryable<ClinicalTrialMetadata>>?>())
+                                .Returns(Enumerable.Empty<ClinicalTrialMetadata>().AsQueryable());
 
         // Act
         var result = _service.SearchTrialMetadatas(searchParams);

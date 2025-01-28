@@ -1,10 +1,9 @@
-﻿namespace Test._4Create.Data
+﻿namespace Test._4Create.Data;
+
+public static class DbConstants
 {
-    public static class DbConstants
+    public static class Tables
     {
-        public static class Tables
-        {
-            public const string ClinicalTrialMetadatas = "ClinicalTrialMetadatas";
-        }
+        public const string ClinicalTrialMetadatas = "ClinicalTrialMetadatas";
     }
 }

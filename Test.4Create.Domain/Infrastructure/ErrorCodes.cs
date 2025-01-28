@@ -9,6 +9,7 @@
 public static class ErrorCodes
 {
     public const int Undefined = 0;
+
     public class TrialMetadataProcessing //1-100 inclusive
     {
         public const int TrialMetadataPersistenceError = 1;

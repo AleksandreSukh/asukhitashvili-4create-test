@@ -34,13 +34,7 @@ public class ClinicalTrialMetadataValidator : AbstractValidator<ClinicalTrialMet
             .When(x => x.EndDate.HasValue);
     }
 
-    private static bool BeAValidDate(DateTime? date)
-    {
-        return date != default;
-    }
+    private static bool BeAValidDate(DateTime? date) => date != default;
 
-    private static bool BeAValidDate(DateTime date)
-    {
-        return date != default;
-    }
+    private static bool BeAValidDate(DateTime date) => date != default;
 }

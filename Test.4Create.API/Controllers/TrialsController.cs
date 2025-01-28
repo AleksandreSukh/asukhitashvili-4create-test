@@ -1,11 +1,11 @@
 using System.Net;
-using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
+using NJsonSchema;
 using Test._4Create.API.InputValidation;
-using Test._4Create.Domain.Models;
-using Test._4Create.Domain.Models.Validation;
-using Test._4Create.Domain.Services;
 using Test._4Create.Domain.Infrastructure;
+using Test._4Create.Domain.Models;
+using Test._4Create.Domain.Services;
 
 namespace Test._4Create.API.Controllers;
 
@@ -23,11 +23,10 @@ public class TrialsController : ControllerBase
     }
 
     /// <summary>
-    /// Returns specific records by id.
+    ///     Returns specific records by id.
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
-
     [HttpGet("{id}")]
     public ActionResult<ClinicalTrialMetadataReadModel> Get([FromRoute] string id)
     {
@@ -44,25 +43,25 @@ public class TrialsController : ControllerBase
             }
 
             _logger.LogError($"Get trial data failed with unexpected error:{error}");
-            return new StatusCodeResult((int)HttpStatusCode.InternalServerError);
+            return new StatusCodeResult((int) HttpStatusCode.InternalServerError);
         }
+
         _logger.LogInformation("Get trial request served");
 
         return Ok(result.Data);
     }
 
     /// <summary>
-    /// Search records based on query parameters (e.g., status)
+    ///     Search records based on query parameters (e.g., status)
     /// </summary>
     /// <param name="status"></param>
     /// <returns></returns>
-
     [HttpGet("search")]
     public ActionResult<List<ClinicalTrialMetadataReadModel>> Search([FromQuery] string? status)
     {
         _logger.LogInformation("Search request initiated");
 
-        var result = _trialProcessingService.SearchTrialMetadatas(new ClinicalTrialMetadataSearchParams { Status = status });
+        var result = _trialProcessingService.SearchTrialMetadatas(new() { Status = status });
 
         if (!result.IsSuccessful)
         {
@@ -78,7 +77,7 @@ public class TrialsController : ControllerBase
     }
 
     /// <summary>
-    /// Upload metadata JSON file
+    ///     Upload metadata JSON file
     /// </summary>
     /// <param name="file"></param>
     /// <returns></returns>
@@ -99,7 +98,7 @@ public class TrialsController : ControllerBase
         var jsonContent = await ReadJsonContent(file);
 
         var schemaJson = ResourceHelper.GetEmbeddedResource("Resources.ClinicalTrialMetadata.schema.json");
-        var schema = await NJsonSchema.JsonSchema.FromJsonAsync(schemaJson);
+        var schema = await JsonSchema.FromJsonAsync(schemaJson);
 
         var errors = schema.Validate(jsonContent);
         if (errors.Count > 0)
@@ -130,14 +129,14 @@ public class TrialsController : ControllerBase
             }
 
             _logger.LogInformation("JSON upload failed due to persistence error:" + error.Message);
-            return new StatusCodeResult((int)HttpStatusCode.InternalServerError);
+            return new StatusCodeResult((int) HttpStatusCode.InternalServerError);
         }
 
         _logger.LogInformation("JSON upload completed");
 
         return Ok(new
         {
-            Message = "JSON uploaded successfully.",
+            Message = "JSON uploaded successfully."
         });
     }
 

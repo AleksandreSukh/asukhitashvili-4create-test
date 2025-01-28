@@ -1,5 +1,5 @@
-﻿using Test._4Create.Domain.Models.Validation;
-using Test._4Create.Domain.Models;
+﻿using Test._4Create.Domain.Models;
+using Test._4Create.Domain.Models.Validation;
 
 namespace Test._4Create.Domain.Tests.Models.Validation;
 
@@ -11,7 +11,7 @@ public class ClinicalTrialMetadataValidatorTests
     [SetUp]
     public void Setup()
     {
-        _validator = new ClinicalTrialMetadataValidator();
+        _validator = new();
     }
 
     [Test]
@@ -55,7 +55,7 @@ public class ClinicalTrialMetadataValidatorTests
 
         // Assert
         Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors[0].ErrorMessage,Is.EqualTo("Trial ID is required."));
+        Assert.That(result.Errors[0].ErrorMessage, Is.EqualTo("Trial ID is required."));
     }
 
     [Test]
@@ -121,7 +121,7 @@ public class ClinicalTrialMetadataValidatorTests
 
         // Assert
         Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors[0].ErrorMessage,Is.EqualTo("End date must be on or after the start date."));
+        Assert.That(result.Errors[0].ErrorMessage, Is.EqualTo("End date must be on or after the start date."));
     }
 
     [Test]
@@ -143,7 +143,7 @@ public class ClinicalTrialMetadataValidatorTests
 
         // Assert
         Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors[0].ErrorMessage,Is.EqualTo("Participants must be at least 1."));
+        Assert.That(result.Errors[0].ErrorMessage, Is.EqualTo("Participants must be at least 1."));
     }
 
     [Test]
@@ -157,7 +157,7 @@ public class ClinicalTrialMetadataValidatorTests
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddMonths(1),
             Participants = 100,
-            Status = (TrialStatus)999 // Invalid enum value
+            Status = (TrialStatus) 999 // Invalid enum value
         };
 
         // Act
@@ -168,4 +168,3 @@ public class ClinicalTrialMetadataValidatorTests
         Assert.That(result.Errors[0].ErrorMessage, Is.EqualTo("Status must be one of the valid values: NotStarted, Ongoing, or Completed."));
     }
 }
-

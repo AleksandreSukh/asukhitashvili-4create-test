@@ -15,6 +15,6 @@ public class TrialDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ClinicalTrialMetadata>()
-            .HasKey(e => e.TrialId);
+                    .HasKey(e => e.TrialId);
     }
 }

@@ -18,12 +18,14 @@ public sealed class UnitOfWork(TrialDbContext context) : IUnitOfWork
         Dispose(true);
         GC.SuppressFinalize(this);
     }
+
     private void Dispose(bool disposing)
     {
         if (!_disposed && disposing)
         {
             context.Dispose();
         }
+
         _disposed = true;
     }
 }

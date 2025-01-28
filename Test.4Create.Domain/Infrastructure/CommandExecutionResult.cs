@@ -4,7 +4,7 @@ public class CommandExecutionResult
 {
     public bool IsSuccessful { get; set; }
     public IEnumerable<Error>? Errors { get; set; }
-        
+
     public static CommandExecutionResult Ok() => new() { IsSuccessful = true };
 
     public static CommandExecutionResult WithError(int errorCode, string error) =>

@@ -1,9 +1,8 @@
-﻿namespace Test._4Create.Domain.Models
+﻿namespace Test._4Create.Domain.Models;
+
+public enum TrialStatus
 {
-    public enum TrialStatus
-    {
-        NotStarted,
-        Ongoing,
-        Completed
-    }
+    NotStarted,
+    Ongoing,
+    Completed
 }
