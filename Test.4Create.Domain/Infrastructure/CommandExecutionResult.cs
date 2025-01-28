@@ -2,10 +2,10 @@
 
 public class CommandExecutionResult
 {
-    public bool Success { get; set; }
-    public IEnumerable<Error> Errors { get; set; }
+    public bool IsSuccess { get; set; }
+    public IEnumerable<Error>? Errors { get; set; }
         
-    public static CommandExecutionResult Ok() => new() { Success = true };
+    public static CommandExecutionResult Ok() => new() { IsSuccess = true };
 
     public static CommandExecutionResult WithError(int errorCode, string error) =>
         WithErrors(new KeyValuePair<int, string>(errorCode, error));
@@ -14,7 +14,7 @@ public class CommandExecutionResult
     {
         return new()
         {
-            Success = false,
+            IsSuccess = false,
             Errors = errors.ToList().Select(x => new Error { Code = x.Key, Message = x.Value })
         };
     }

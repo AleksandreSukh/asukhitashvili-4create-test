@@ -35,7 +35,7 @@ public class TrialsController : ControllerBase
 
         var result = _trialProcessingService.GetTrialMetadataById(id);
 
-        if (!result.Success)
+        if (!result.IsSuccess)
         {
             var error = result.Errors.First();
             if (error.Code == ErrorCodes.TrialMetadataProcessing.TrialMetadataWasNotFound)
@@ -64,7 +64,7 @@ public class TrialsController : ControllerBase
 
         var result = _trialProcessingService.SearchTrialMetadatas(new ClinicalTrialMetadataSearchParams { Status = status });
 
-        if (!result.Success)
+        if (!result.IsSuccess)
         {
             var error = result.Errors.First();
             _logger.LogError($"Search trial data failed with unexpected error:{error}");
@@ -128,7 +128,7 @@ public class TrialsController : ControllerBase
 
         var trialMetadataSavingResult = await _trialProcessingService.SaveTrialMetadata(clinicalTrialMetadata!);
 
-        if (!trialMetadataSavingResult.Success)
+        if (!trialMetadataSavingResult.IsSuccess)
         {
             _logger.LogInformation("JSON upload failed due to persistence error:" + trialMetadataSavingResult.Errors.First().Message);
             return new StatusCodeResult((int)HttpStatusCode.InternalServerError);
