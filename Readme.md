@@ -1,3 +1,4 @@
+## Run the API using Docker Desktop:
 To run this API on a Windows machine you'll need to have Docker Desktop installed. (and WSL updated).
 
 Run docker-compose:
